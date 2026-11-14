@@ -1,0 +1,21 @@
+# Arquivos de texto (entradas de teste)
+*.txt
+
+# Executáveis e arquivos objeto (Compilação C)
+*.o
+*.obj
+*.exe
+*.out
+
+# Code::Blocks
+*.depend
+*.layout
+bin/
+obj/
+
+# Visual Studio Code
+.vscode/
+
+# Arquivos temporários de Sistema Operacional
+.DS_Store
+Thumbs.db
