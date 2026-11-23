@@ -1,5 +1,3 @@
-# Arquivos de texto (entradas de teste)
-*.txt
 
 # Executáveis e arquivos objeto (Compilação C)
 *.o

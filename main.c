@@ -21,8 +21,13 @@ typedef struct IndInvert{
 } IndInvert;
 
 void InserirToken(IndInvert *indice, char *palavra, int inicio){
+    int pos_inserir = indice->qnt;
+
     for (int i=0; i < indice->qnt; i++){
-        if (strcmp(indice->vocabulario[i].palavra, palavra) == 0){
+
+        int cmp = strcmp(indice->vocabulario[i].palavra, palavra);
+        
+        if (cmp == 0){
             int qnt_pos = indice->vocabulario[i].qnt;
             indice->vocabulario[i].pos = realloc(indice->vocabulario[i].pos, (qnt_pos+1)*sizeof(int));
 
@@ -30,22 +35,31 @@ void InserirToken(IndInvert *indice, char *palavra, int inicio){
             indice->vocabulario[i].qnt += 1;
             return;
         }
+
+        if (cmp > 0){
+            pos_inserir = i;
+            break;
+        }
     }
 
-    int fim = indice->qnt;
     indice->vocabulario = realloc(indice->vocabulario, (indice->qnt +1)*sizeof(Token));
-    strcpy(indice->vocabulario[fim].palavra, palavra);
-    indice->vocabulario[fim].pos = malloc(sizeof(int));
-    indice->vocabulario[fim].pos[0] = inicio;
-    indice->vocabulario[fim].qnt = 1;
+
+    for (int i = indice->qnt; i>pos_inserir; i--){
+        indice->vocabulario[i] = indice->vocabulario[i-1];
+    }
+
+    strcpy(indice->vocabulario[pos_inserir].palavra, palavra);
+    indice->vocabulario[pos_inserir].pos = malloc(sizeof(int));
+    indice->vocabulario[pos_inserir].pos[0] = inicio;
+    indice->vocabulario[pos_inserir].qnt = 1;
 
     indice->qnt += 1;
 }
 
 void LerArq(IndInvert *indice){
-    char caminho[100];
+    char caminho[300];
     printf("Digite o caminho do arquivo:\n");
-    scanf("%s", caminho);
+    scanf(" %[^\n]", caminho);
 
     FILE *arq = fopen(caminho, "r");
 
@@ -57,6 +71,15 @@ void LerArq(IndInvert *indice){
         free(indice->txt_orig);
         indice->txt_orig = NULL;
     }
+
+    if (indice->vocabulario != NULL){
+        for (int i = 0; i < indice->qnt; i++){
+            free(indice->vocabulario[i].pos);
+        }
+        free(indice->vocabulario); 
+        indice->vocabulario = NULL;
+        indice->qnt = 0;
+    }   
 
     char linha[1024];
     int tam_txt = 0;
@@ -77,6 +100,7 @@ void LerArq(IndInvert *indice){
     char palavra[50];
     int pos =0;
     int tamanho = strlen(indice->txt_orig);
+    int erro = 0;
 
     for (int i =0; i <= tamanho; i++){
         unsigned char c = (unsigned char)indice->txt_orig[i];
@@ -86,12 +110,18 @@ void LerArq(IndInvert *indice){
                 palavra[pos] = tolower(c);
                 pos++;
             }
+            else if(erro == 0){
+                printf("Palavra muito grande na posicao %d, truncando para 50 caracteres.\n", i - pos);
+                palavra[49] = '\0';
+                erro = 1;
+            }
         }
         else if (pos>0){
             palavra[pos] = '\0';
             int ini_palavra = i - pos;
             InserirToken(indice, palavra, ini_palavra);
             pos = 0;
+            erro = 0;
         }
     }
 }
@@ -123,7 +153,6 @@ int main(){
 
         scanf("%d", &opc_menu);
         if (opc_menu == 1){
-
             LerArq(&indice);
 
         }
@@ -132,6 +161,7 @@ int main(){
         }
         else if (opc_menu == 3){
             int opc_menu2 = 0;
+            int comp = 0; 
 
             printf(
             "\n Escolha uma opcao pelo numero:\n"
@@ -141,15 +171,79 @@ int main(){
 
             scanf("%d", &opc_menu2);
 
-
             if (opc_menu2 == 3){
                 opc_menu = 0;
                 continue;
             }
-            else if(opc_menu2 == 1){
+            
+            char palavra[100];
+            printf("Digite a palavra que deseja buscar: ");
+            scanf("%s", palavra);
+            for (int i = 0; palavra[i] != '\0'; i++){
+                palavra[i] = tolower((unsigned char)palavra[i]);
+            }
 
+            if(opc_menu2 == 1){
+                int baixo=0, alto = indice.qnt-1, achou=-1;
+
+                while (baixo <= alto){
+                    int meio = baixo + (alto-baixo)/2;
+                    int cmp = strcmp(palavra, indice.vocabulario[meio].palavra);
+
+
+                    comp++;
+                    if (cmp == 0){
+                        achou = indice.vocabulario[meio].pos[0];
+                        int ini_contex = achou-40;
+                        if(ini_contex < 0){
+                            ini_contex = 0;
+                        }
+
+                        printf("\nPalavra encontrada!\n"
+                                "Palavra: %s\nPosicao: %d\nOcorrencias: %d\nComparacoes: %d\n", palavra, achou,indice.vocabulario[meio].qnt, comp);
+
+                        printf("Contexto: %.100s\n\n", &indice.txt_orig[ini_contex]);
+
+                        break;
+                    }
+
+                    if (cmp>0){
+                        baixo = meio+1;
+                    }else if(cmp<0){
+                        alto = meio-1;
+                    }
+                }
+
+                if (achou == -1){
+                    printf("Sinto muito, a palavra nao foi encontrada.\n");
+                }
             }
             else if(opc_menu2 == 2){
+                int achou = -1;
+
+                for (int i=0; i<indice.qnt; i++){
+                    comp++;
+                    int cmp = strcmp(palavra, indice.vocabulario[i].palavra);
+
+                    if (cmp == 0){
+                        achou = indice.vocabulario[i].pos[0];
+                        int ini_contex = achou-40;
+                        if(ini_contex < 0){
+                            ini_contex = 0;
+                        }
+
+                        printf("\nPalavra encontrada!\n"
+                                "Palavra: %s\nPosicao: %d\nOcorrencias: %d\nComparacoes: %d\n", palavra, achou,indice.vocabulario[i].qnt, comp);
+
+                        printf("Contexto: %.100s\n\n", &indice.txt_orig[ini_contex]);
+
+                        break;
+                    }
+                }
+
+                if (achou == -1){
+                    printf("Sinto muito, a palavra nao foi encontrada.\n");
+                }
 
             }
         }
