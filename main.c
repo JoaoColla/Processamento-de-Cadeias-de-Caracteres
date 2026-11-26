@@ -138,6 +138,9 @@ void exibirIndice(IndInvert *indice){
     }
 }
 
+int idx_palavra = -1;
+int ocorr_atual = 0;
+
 int main(){
     int opc_menu = 0;
     IndInvert indice = {NULL, NULL, 0, 0};
@@ -148,12 +151,13 @@ int main(){
         "[ 1 ] - Ler e processar arquivo texto\n"
         "[ 2 ] - Apresentar o arquivo invertido\n"
         "[ 3 ] - Procurar uma palavra\n"
-        "[ 4 ] - Proximma ocorrencia da busca\n"
+        "[ 4 ] - Proxima ocorrencia da busca\n"
         "[ 5 ] - Sair do sistema\n\n");
 
         scanf("%d", &opc_menu);
         if (opc_menu == 1){
             LerArq(&indice);
+            idx_palavra = -1;
 
         }
         else if (opc_menu == 2){
@@ -194,6 +198,9 @@ int main(){
                     comp++;
                     if (cmp == 0){
                         achou = indice.vocabulario[meio].pos[0];
+                        idx_palavra = meio;
+                        ocorr_atual = 0;
+
                         int ini_contex = achou-40;
                         if(ini_contex < 0){
                             ini_contex = 0;
@@ -216,6 +223,7 @@ int main(){
 
                 if (achou == -1){
                     printf("Sinto muito, a palavra nao foi encontrada.\n");
+                    idx_palavra = -1;
                 }
             }
             else if(opc_menu2 == 2){
@@ -227,6 +235,9 @@ int main(){
 
                     if (cmp == 0){
                         achou = indice.vocabulario[i].pos[0];
+                        idx_palavra = i;
+                        ocorr_atual = 0;
+
                         int ini_contex = achou-40;
                         if(ini_contex < 0){
                             ini_contex = 0;
@@ -243,12 +254,38 @@ int main(){
 
                 if (achou == -1){
                     printf("Sinto muito, a palavra nao foi encontrada.\n");
+                    idx_palavra = -1;
                 }
 
             }
         }
         else if (opc_menu == 4){
+            if (idx_palavra == -1){
+                printf("Nenhuma palavra foi buscada ainda, utilize a opcao [ 3 ] antes.");
+            }
+            else if (ocorr_atual + 1 < indice.vocabulario[idx_palavra].qnt){
+                ocorr_atual++;
 
+                int posicao = indice.vocabulario[idx_palavra].pos[ocorr_atual];
+                int ini_contex = posicao - 40;
+                if (ini_contex < 0){
+                    ini_contex = 0;
+                }
+
+                printf("Ocorrencia %d de %d da palavra %s, na posicao %d\nContexto: %.100s\n\n", ocorr_atual+1, indice.vocabulario[idx_palavra].qnt, indice.vocabulario[idx_palavra].palavra, indice.vocabulario[idx_palavra].pos[ocorr_atual],&indice.txt_orig[ini_contex]);
+            }else{
+                printf("\n\nTodas as ocorrencias da palavra -> %s <- ja foram visitadas\n\n", indice.vocabulario[idx_palavra].palavra);
+            }
         }
     }while(opc_menu != 5);
+
+    if (indice.txt_orig != NULL){
+    free(indice.txt_orig);
+    }
+    if (indice.vocabulario != NULL){
+        for (int i = 0; i < indice.qnt; i++){
+            free(indice.vocabulario[i].pos);
+        }
+        free(indice.vocabulario);
+    }
 }
